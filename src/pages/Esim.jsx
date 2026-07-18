@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import {
-  Row, Col, Card, Typography, Input, Button, Tag, message, Space, Empty, Modal, Statistic, Spin, List, Image, Result,
+  Card, Typography, Input, Button, Tag, message, Space, Empty, Modal, Statistic, List, Image, Result, Table,
 } from 'antd';
 import { SearchOutlined, MobileOutlined, ShoppingCartOutlined, GlobalOutlined, ReloadOutlined } from '@ant-design/icons';
 import { api, usdt } from '../api.js';
@@ -61,32 +61,37 @@ export default function Esim() {
         />
       </Card>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div>
-      ) : plans.length === 0 ? (
-        <Empty description="Тарифы не найдены — уточните запрос" />
-      ) : (
-        <Row gutter={[12, 12]}>
-          {plans.map((p) => (
-            <Col xs={24} sm={12} lg={8} key={p.id}>
-              <Card size="small" hoverable styles={{ body: { padding: 14 } }}>
-                <Space align="start" style={{ width: '100%', justifyContent: 'space-between' }}>
-                  <div>
-                    <Text strong>{p.country}</Text>
-                    <div><Tag color="blue" style={{ marginTop: 4 }}>{p.data} {p.dataUnit || 'GB'}</Tag><Tag>{p.days} дн.</Tag></div>
-                    {p.operators && <Text type="secondary" style={{ fontSize: 11 }}>{String(p.operators).split(',')[0]}</Text>}
-                  </div>
-                  {p.image && <img src={p.image} alt="" width={34} height={22} style={{ borderRadius: 3, objectFit: 'cover' }} />}
+      <Card styles={{ body: { padding: 0 } }}>
+        <Table
+          dataSource={plans} rowKey="id" loading={loading} size="middle"
+          pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `Тарифов: ${t}` }}
+          scroll={{ x: 720 }}
+          locale={{ emptyText: <Empty description="Тарифы не найдены — уточните запрос" /> }}
+          columns={[
+            {
+              title: 'Страна', dataIndex: 'country',
+              sorter: (a, b) => (a.country || '').localeCompare(b.country || ''),
+              render: (v, r) => (
+                <Space>
+                  {r.image && <img src={r.image} alt="" width={28} height={19} style={{ borderRadius: 3, objectFit: 'cover' }} />}
+                  <Text strong>{v}</Text>
                 </Space>
-                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text strong style={{ fontSize: 16, color: LNP_PRIMARY }}>{usdt(p.priceUsdt)}</Text>
-                  <Button type="primary" size="small" icon={<ShoppingCartOutlined />} loading={buying === p.id} onClick={() => buy(p)}>Купить</Button>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      )}
+              ),
+            },
+            { title: 'Трафик', dataIndex: 'data', align: 'center', sorter: (a, b) => Number(a.data) - Number(b.data),
+              render: (v, r) => <Tag color="blue">{v} {r.dataUnit || 'GB'}</Tag> },
+            { title: 'Срок', dataIndex: 'days', align: 'center', sorter: (a, b) => Number(a.days) - Number(b.days),
+              render: (v) => `${v} дн.` },
+            { title: 'Оператор', dataIndex: 'operators', responsive: ['lg'],
+              render: (v) => v ? String(v).split(',')[0] : '—' },
+            { title: 'Цена', dataIndex: 'priceUsdt', align: 'right', defaultSortOrder: 'ascend',
+              sorter: (a, b) => a.priceUsdt - b.priceUsdt,
+              render: (v) => <Text strong style={{ fontSize: 15, color: LNP_PRIMARY }}>{usdt(v)}</Text> },
+            { title: '', align: 'right', fixed: 'right', width: 110,
+              render: (_, p) => <Button type="primary" size="small" icon={<ShoppingCartOutlined />} loading={buying === p.id} onClick={() => buy(p)}>Купить</Button> },
+          ]}
+        />
+      </Card>
 
       {/* My eSIMs */}
       <Card style={{ marginTop: 20 }} title={<Space><MobileOutlined />Мои eSIM ({myEsims.length})</Space>}
