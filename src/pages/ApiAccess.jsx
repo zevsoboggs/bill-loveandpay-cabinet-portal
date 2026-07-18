@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   Card, Typography, Button, Space, Input, Table, message, Tag, Popconfirm, Modal, Form,
-  Descriptions, Alert, Divider,
+  Descriptions, Alert, Divider, Switch,
 } from 'antd';
 import {
-  CopyOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined, EyeInvisibleOutlined, EyeOutlined, ApiOutlined,
+  CopyOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined, EyeInvisibleOutlined, EyeOutlined, ApiOutlined, SendOutlined, ThunderboltOutlined,
 } from '@ant-design/icons';
 import { api, DOCS_URL, API_BASE } from '../api.js';
 
 const { Title, Text, Paragraph } = Typography;
+
+const WH_STATUS_COLOR = { SUCCESS: 'success', FAILED: 'error', PENDING: 'processing' };
 
 export default function ApiAccess() {
   const [me, setMe] = useState(null);
@@ -18,13 +20,44 @@ export default function ApiAccess() {
   const [busy, setBusy] = useState(false);
   const [form] = Form.useForm();
 
+  // Webhooks
+  const [webhook, setWebhook] = useState(null);
+  const [deliveries, setDeliveries] = useState([]);
+  const [whUrl, setWhUrl] = useState('');
+  const [whReveal, setWhReveal] = useState(false);
+
   const load = async () => {
-    const [meR, ipR] = await Promise.all([api.get('/me'), api.get('/ip-whitelist')]);
-    setMe(meR.data); setIps(ipR.data);
+    const [meR, ipR, whR, dlR] = await Promise.all([
+      api.get('/me'), api.get('/ip-whitelist'), api.get('/webhook'), api.get('/webhook/deliveries'),
+    ]);
+    setMe(meR.data); setIps(ipR.data); setWebhook(whR.data); setWhUrl(whR.data.url || ''); setDeliveries(dlR.data);
   };
   useEffect(() => { load(); }, []);
 
   const copy = (v) => { navigator.clipboard.writeText(v); message.success('Скопировано'); };
+
+  const saveWebhook = async (enabled) => {
+    setBusy(true);
+    try {
+      const { data } = await api.put('/webhook', { url: whUrl, enabled: enabled ?? webhook.enabled });
+      setWebhook(data); message.success('Вебхук сохранён');
+    } catch (e) { message.error(e.response?.data?.error || 'Ошибка'); } finally { setBusy(false); }
+  };
+
+  const testWebhook = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.post('/webhook/test');
+      message.success(`Тест доставлен (HTTP ${data.httpStatus})`);
+      const dl = await api.get('/webhook/deliveries'); setDeliveries(dl.data);
+    } catch (e) { message.error(e.response?.data?.error || 'Не доставлено — проверьте URL'); } finally { setBusy(false); }
+  };
+
+  const rotateWhSecret = async () => {
+    setBusy(true);
+    try { const { data } = await api.post('/webhook/rotate-secret'); setWebhook((w) => ({ ...w, secret: data.secret })); message.success('Секрет обновлён'); }
+    catch { message.error('Ошибка'); } finally { setBusy(false); }
+  };
 
   const rotate = async () => {
     setBusy(true);
@@ -82,6 +115,39 @@ export default function ApiAccess() {
               <Popconfirm title="Удалить IP?" onConfirm={() => delIp(r.id)}><Button size="small" danger icon={<DeleteOutlined />} /></Popconfirm>) },
           ]}
           locale={{ emptyText: 'Нет разрешённых IP — добавьте хотя бы один' }} />
+      </Card>
+
+      <Card style={{ marginTop: 16 }} title={<Space><ThunderboltOutlined />Вебхуки</Space>}
+        extra={<Switch checked={!!webhook?.enabled} onChange={(v) => saveWebhook(v)} checkedChildren="Вкл" unCheckedChildren="Выкл" />}>
+        <Alert type="info" showMessage style={{ marginBottom: 12 }}
+          message="Уведомления о событиях на ваш сервер (депозит, оплата, выпуск eSIM)."
+          description={<>События: <Text code>deposit.credited</Text>, <Text code>payment.completed</Text>, <Text code>payment.failed</Text>, <Text code>esim.issued</Text>. Подпись — заголовок <Text code>X-LnP-Signature</Text> (HMAC-SHA256 от тела секретом ниже).</>} />
+        <Space.Compact style={{ display: 'flex', marginBottom: 12 }}>
+          <Input placeholder="https://your-app.com/webhooks/loveandpay" value={whUrl} onChange={(e) => setWhUrl(e.target.value)} />
+          <Button type="primary" onClick={() => saveWebhook()} loading={busy}>Сохранить</Button>
+          <Button icon={<SendOutlined />} onClick={testWebhook} loading={busy} disabled={!webhook?.url}>Тест</Button>
+        </Space.Compact>
+        <Descriptions column={1} size="small" bordered style={{ marginBottom: 12 }}>
+          <Descriptions.Item label="Секрет подписи">
+            <Space wrap>
+              <Text code>{whReveal ? webhook?.secret : (webhook?.secret ? webhook.secret.slice(0, 12) + '••••••••' : '—')}</Text>
+              <Button size="small" icon={whReveal ? <EyeInvisibleOutlined /> : <EyeOutlined />} onClick={() => setWhReveal(!whReveal)} />
+              <Button size="small" icon={<CopyOutlined />} onClick={() => copy(webhook?.secret)} />
+              <Popconfirm title="Перевыпустить секрет? Старая подпись перестанет совпадать." onConfirm={rotateWhSecret}>
+                <Button size="small" danger icon={<ReloadOutlined />}>Ротация</Button></Popconfirm>
+            </Space>
+          </Descriptions.Item>
+        </Descriptions>
+        <Text type="secondary">Последние доставки:</Text>
+        <Table dataSource={deliveries} rowKey="id" size="small" pagination={{ pageSize: 5 }} style={{ marginTop: 8 }} scroll={{ x: 500 }}
+          columns={[
+            { title: 'Событие', dataIndex: 'event', render: (v) => <Tag>{v}</Tag> },
+            { title: 'Статус', dataIndex: 'status', render: (v) => <Tag color={WH_STATUS_COLOR[v]}>{v}</Tag> },
+            { title: 'HTTP', dataIndex: 'httpStatus', render: (v) => v || '—' },
+            { title: 'Попыток', dataIndex: 'attempts' },
+            { title: 'Время', dataIndex: 'createdAt', render: (v) => new Date(v).toLocaleString('ru-RU') },
+          ]}
+          locale={{ emptyText: 'Доставок пока нет' }} />
       </Card>
 
       <Card style={{ marginTop: 16 }} title="Документация и быстрый старт"

@@ -9,6 +9,12 @@ import { LNP_PRIMARY } from '../components/Brand.jsx';
 
 const { Title, Text, Paragraph } = Typography;
 
+// ISO2 country code → emoji flag (no external requests, fully white-label).
+const flagEmoji = (iso2) =>
+  iso2 && iso2.length === 2
+    ? iso2.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
+    : '🌐';
+
 export default function Esim() {
   const [me, setMe] = useState(null);
   const [query, setQuery] = useState('');
@@ -73,7 +79,7 @@ export default function Esim() {
               sorter: (a, b) => (a.country || '').localeCompare(b.country || ''),
               render: (v, r) => (
                 <Space>
-                  {r.image && <img src={r.image} alt="" width={28} height={19} style={{ borderRadius: 3, objectFit: 'cover' }} />}
+                  <span style={{ fontSize: 20, lineHeight: 1 }}>{flagEmoji(r.countryIso2)}</span>
                   <Text strong>{v}</Text>
                 </Space>
               ),
@@ -82,8 +88,6 @@ export default function Esim() {
               render: (v, r) => <Tag color="blue">{v} {r.dataUnit || 'GB'}</Tag> },
             { title: 'Срок', dataIndex: 'days', align: 'center', sorter: (a, b) => Number(a.days) - Number(b.days),
               render: (v) => `${v} дн.` },
-            { title: 'Оператор', dataIndex: 'operators', responsive: ['lg'],
-              render: (v) => v ? String(v).split(',')[0] : '—' },
             { title: 'Цена', dataIndex: 'priceUsdt', align: 'right', defaultSortOrder: 'ascend',
               sorter: (a, b) => a.priceUsdt - b.priceUsdt,
               render: (v) => <Text strong style={{ fontSize: 15, color: LNP_PRIMARY }}>{usdt(v)}</Text> },
