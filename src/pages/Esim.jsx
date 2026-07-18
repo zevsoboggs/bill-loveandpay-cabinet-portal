@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import {
-  Card, Typography, Input, Button, Tag, message, Space, Empty, Modal, Statistic, List, Image, Result, Table,
+  Card, Typography, Input, Button, Tag, message, Space, Empty, Modal, Statistic, List, Image, Result, Table, Tooltip,
 } from 'antd';
 import { SearchOutlined, MobileOutlined, ShoppingCartOutlined, GlobalOutlined, ReloadOutlined } from '@ant-design/icons';
 import { api, usdt } from '../api.js';
@@ -14,6 +14,21 @@ const flagEmoji = (iso2) =>
   iso2 && iso2.length === 2
     ? iso2.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
     : '🌐';
+
+// Russian plural for "страна".
+const pluralCountries = (n) => {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return 'стран';
+  if (b > 1 && b < 5) return 'страны';
+  if (b === 1) return 'страна';
+  return 'стран';
+};
+
+// Short region label from a multi-country plan name ("Europe 5GB_…" → "Europe").
+const regionLabel = (p) => {
+  const m = (p.name || '').match(/^([A-Za-zА-Яа-я &]+?)\s*\d/);
+  return (m ? m[1].trim() : p.planType) || 'Регион';
+};
 
 export default function Esim() {
   const [me, setMe] = useState(null);
@@ -71,27 +86,41 @@ export default function Esim() {
         <Table
           dataSource={plans} rowKey="id" loading={loading} size="middle"
           pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `Тарифов: ${t}` }}
-          scroll={{ x: 720 }}
+          tableLayout="fixed"
+          scroll={{ x: 640 }}
           locale={{ emptyText: <Empty description="Тарифы не найдены — уточните запрос" /> }}
           columns={[
             {
-              title: 'Страна', dataIndex: 'country',
+              title: 'Направление', dataIndex: 'country', width: 260, ellipsis: true,
               sorter: (a, b) => (a.country || '').localeCompare(b.country || ''),
-              render: (v, r) => (
-                <Space>
-                  <span style={{ fontSize: 20, lineHeight: 1 }}>{flagEmoji(r.countryIso2)}</span>
-                  <Text strong>{v}</Text>
-                </Space>
-              ),
+              render: (v, r) => {
+                if (r.countriesCount > 1) {
+                  return (
+                    <Tooltip title={<div style={{ maxHeight: 220, overflow: 'auto' }}>{r.countries.join(', ')}</div>}>
+                      <Space size={6}>
+                        <span style={{ fontSize: 18, lineHeight: 1 }}>🌍</span>
+                        <Text strong>{regionLabel(r)}</Text>
+                        <Tag color="geekblue" style={{ marginInlineEnd: 0 }}>{r.countriesCount} {pluralCountries(r.countriesCount)}</Tag>
+                      </Space>
+                    </Tooltip>
+                  );
+                }
+                return (
+                  <Space size={6}>
+                    <span style={{ fontSize: 20, lineHeight: 1 }}>{flagEmoji(r.countryIso2)}</span>
+                    <Text strong>{v}</Text>
+                  </Space>
+                );
+              },
             },
-            { title: 'Трафик', dataIndex: 'data', align: 'center', sorter: (a, b) => Number(a.data) - Number(b.data),
+            { title: 'Трафик', dataIndex: 'data', align: 'center', width: 100, sorter: (a, b) => Number(a.data) - Number(b.data),
               render: (v, r) => <Tag color="blue">{v} {r.dataUnit || 'GB'}</Tag> },
-            { title: 'Срок', dataIndex: 'days', align: 'center', sorter: (a, b) => Number(a.days) - Number(b.days),
+            { title: 'Срок', dataIndex: 'days', align: 'center', width: 90, sorter: (a, b) => Number(a.days) - Number(b.days),
               render: (v) => `${v} дн.` },
-            { title: 'Цена', dataIndex: 'priceUsdt', align: 'right', defaultSortOrder: 'ascend',
+            { title: 'Цена', dataIndex: 'priceUsdt', align: 'right', width: 120, defaultSortOrder: 'ascend',
               sorter: (a, b) => a.priceUsdt - b.priceUsdt,
               render: (v) => <Text strong style={{ fontSize: 15, color: LNP_PRIMARY }}>{usdt(v)}</Text> },
-            { title: '', align: 'right', fixed: 'right', width: 110,
+            { title: '', align: 'right', fixed: 'right', width: 104,
               render: (_, p) => <Button type="primary" size="small" icon={<ShoppingCartOutlined />} loading={buying === p.id} onClick={() => buy(p)}>Купить</Button> },
           ]}
         />
