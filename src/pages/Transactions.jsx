@@ -3,8 +3,8 @@ import { Card, Table, Tag, Typography, Segmented, Space } from 'antd';
 import { api, usdt } from '../api.js';
 
 const { Title, Text } = Typography;
-const SYS_LABEL = { SBP: 'СБП (USDT)', PROMPTPAY: 'PromptPay (Тай QR)' };
-const SYS_COLOR = { SBP: 'geekblue', PROMPTPAY: 'green' };
+const SYS_LABEL = { SBP: 'СБП (USDT)', PROMPTPAY: 'PromptPay (Тай QR)', ESIM: 'eSIM' };
+const SYS_COLOR = { SBP: 'geekblue', PROMPTPAY: 'green', ESIM: 'purple' };
 const ST_COLOR = { PENDING: 'default', PROCESSING: 'processing', COMPLETED: 'success', FAILED: 'error', REFUNDED: 'warning' };
 
 export default function Transactions() {
@@ -23,7 +23,7 @@ export default function Transactions() {
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }} wrap>
         <Title level={3} style={{ margin: 0 }}>Транзакции</Title>
         <Segmented value={system} onChange={setSystem} options={[
-          { value: 'ALL', label: 'Все' }, { value: 'SBP', label: SYS_LABEL.SBP }, { value: 'PROMPTPAY', label: SYS_LABEL.PROMPTPAY }]} />
+          { value: 'ALL', label: 'Все' }, { value: 'SBP', label: SYS_LABEL.SBP }, { value: 'PROMPTPAY', label: SYS_LABEL.PROMPTPAY }, { value: 'ESIM', label: SYS_LABEL.ESIM }]} />
       </Space>
       <Card>
         <Table dataSource={rows} rowKey="id" loading={loading} size="small" pagination={{ pageSize: 15 }} scroll={{ x: 800 }}

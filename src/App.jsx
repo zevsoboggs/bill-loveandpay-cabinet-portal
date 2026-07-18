@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { ConfigProvider, Layout, Menu, Typography, Button, Space, Grid, Dropdown, Avatar } from 'antd';
 import {
   DashboardOutlined, WalletOutlined, TransactionOutlined, ApiOutlined, LogoutOutlined,
-  UserOutlined, DownOutlined, SafetyCertificateOutlined, CreditCardOutlined,
+  UserOutlined, DownOutlined, SafetyCertificateOutlined, CreditCardOutlined, MobileOutlined,
 } from '@ant-design/icons';
 import ruRU from 'antd/locale/ru_RU';
-import { auth } from './api.js';
+import { auth, api } from './api.js';
 import { Brand, LNP_PRIMARY } from './components/Brand.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -14,27 +14,37 @@ import Deposit from './pages/Deposit.jsx';
 import Transactions from './pages/Transactions.jsx';
 import ApiAccess from './pages/ApiAccess.jsx';
 import Cards from './pages/Cards.jsx';
+import Esim from './pages/Esim.jsx';
 import Profile from './pages/Profile.jsx';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
 
-const MENU = [
-  { key: '/', icon: <DashboardOutlined />, label: 'Обзор' },
-  { key: '/deposit', icon: <WalletOutlined />, label: 'Депозит' },
-  { key: '/transactions', icon: <TransactionOutlined />, label: 'Транзакции' },
-  { key: '/cards', icon: <CreditCardOutlined />, label: 'Карты' },
-  { key: '/api', icon: <ApiOutlined />, label: 'API-доступ' },
-  { key: '/profile', icon: <UserOutlined />, label: 'Профиль' },
-];
+// Menu adapts to the partner's enabled services (eSIM shown only if granted).
+function buildMenu(services) {
+  const items = [
+    { key: '/', icon: <DashboardOutlined />, label: 'Обзор' },
+    { key: '/deposit', icon: <WalletOutlined />, label: 'Депозит' },
+    { key: '/transactions', icon: <TransactionOutlined />, label: 'Транзакции' },
+  ];
+  if (services?.esim) items.push({ key: '/esim', icon: <MobileOutlined />, label: 'eSIM' });
+  items.push({ key: '/cards', icon: <CreditCardOutlined />, label: 'Карты' });
+  items.push({ key: '/api', icon: <ApiOutlined />, label: 'API-доступ' });
+  items.push({ key: '/profile', icon: <UserOutlined />, label: 'Профиль' });
+  return items;
+}
 
 function Shell() {
   const nav = useNavigate();
   const loc = useLocation();
   const screens = useBreakpoint();
   const [collapsed, setCollapsed] = useState(false);
+  const [services, setServices] = useState(null);
   const me = auth.me();
+
+  useEffect(() => { api.get('/me').then((r) => setServices(r.data.services)).catch(() => {}); }, []);
+  const MENU = buildMenu(services);
   const current = MENU.find((m) => m.key === loc.pathname);
 
   const userMenu = {
@@ -112,6 +122,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/transactions" element={<Transactions />} />
+            <Route path="/esim" element={<Esim />} />
             <Route path="/cards" element={<Cards />} />
             <Route path="/api" element={<ApiAccess />} />
             <Route path="/profile" element={<Profile />} />

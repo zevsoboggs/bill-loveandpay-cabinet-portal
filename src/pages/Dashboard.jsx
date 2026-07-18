@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Statistic, Typography, Spin, Tag, Space, Button, Divider, Alert } from 'antd';
-import { WalletOutlined, ThunderboltOutlined, GlobalOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { WalletOutlined, ThunderboltOutlined, GlobalOutlined, ArrowRightOutlined, MobileOutlined } from '@ant-design/icons';
 import { api } from '../api.js';
 
 const { Title, Text, Paragraph } = Typography;
@@ -27,18 +27,30 @@ export default function Dashboard() {
             <Link to="/deposit"><Button type="primary" block style={{ marginTop: 12 }}>Пополнить депозит <ArrowRightOutlined /></Button></Link>
           </Card>
         </Col>
-        <Col xs={12} md={8}>
-          <Card>
-            <Statistic title="Баланс СБП" value={b.sbp} precision={2} suffix="USDT" valueStyle={{ color: '#2f54eb' }} prefix={<ThunderboltOutlined />} />
-            <Text type="secondary" style={{ fontSize: 12 }}>Наценка: {(me.margins.sbp * 100).toFixed(1)}%</Text>
-          </Card>
-        </Col>
-        <Col xs={12} md={8}>
-          <Card>
-            <Statistic title="Баланс PromptPay" value={b.promptpay} precision={2} suffix="USDT" valueStyle={{ color: '#389e0d' }} prefix={<GlobalOutlined />} />
-            <Text type="secondary" style={{ fontSize: 12 }}>Наценка: {(me.margins.promptpay * 100).toFixed(1)}%</Text>
-          </Card>
-        </Col>
+        {me.services?.sbp && (
+          <Col xs={12} md={8}>
+            <Card>
+              <Statistic title="Баланс СБП" value={b.sbp} precision={2} suffix="USDT" valueStyle={{ color: '#2f54eb' }} prefix={<ThunderboltOutlined />} />
+              <Text type="secondary" style={{ fontSize: 12 }}>Наценка: {(me.margins.sbp * 100).toFixed(1)}%</Text>
+            </Card>
+          </Col>
+        )}
+        {me.services?.promptpay && (
+          <Col xs={12} md={8}>
+            <Card>
+              <Statistic title="Баланс PromptPay" value={b.promptpay} precision={2} suffix="USDT" valueStyle={{ color: '#389e0d' }} prefix={<GlobalOutlined />} />
+              <Text type="secondary" style={{ fontSize: 12 }}>Наценка: {(me.margins.promptpay * 100).toFixed(1)}%</Text>
+            </Card>
+          </Col>
+        )}
+        {me.services?.esim && (
+          <Col xs={12} md={8}>
+            <Card>
+              <Statistic title="Баланс eSIM" value={b.esim} precision={2} suffix="USDT" valueStyle={{ color: '#722ed1' }} prefix={<MobileOutlined />} />
+              <Text type="secondary" style={{ fontSize: 12 }}>Наценка: {(me.margins.esim * 100).toFixed(1)}%</Text>
+            </Card>
+          </Col>
+        )}
       </Row>
 
       <Divider orientation="left">Как работает биллинг</Divider>
