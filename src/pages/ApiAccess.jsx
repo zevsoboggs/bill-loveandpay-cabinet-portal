@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Card, Typography, Button, Space, Input, Table, message, Tag, Popconfirm, Modal, Form,
-  Descriptions, Alert, Divider, Switch,
+  Descriptions, Alert, Divider, Switch, Checkbox, Dropdown,
 } from 'antd';
 import {
   CopyOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined, EyeInvisibleOutlined, EyeOutlined, ApiOutlined, SendOutlined, ThunderboltOutlined,
@@ -24,6 +24,7 @@ export default function ApiAccess() {
   const [webhook, setWebhook] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
   const [whUrl, setWhUrl] = useState('');
+  const [whEvents, setWhEvents] = useState([]);
   const [whReveal, setWhReveal] = useState(false);
   const [logs, setLogs] = useState([]);
 
@@ -33,26 +34,27 @@ export default function ApiAccess() {
     const [meR, ipR, whR, dlR] = await Promise.all([
       api.get('/me'), api.get('/ip-whitelist'), api.get('/webhook'), api.get('/webhook/deliveries'),
     ]);
-    setMe(meR.data); setIps(ipR.data); setWebhook(whR.data); setWhUrl(whR.data.url || ''); setDeliveries(dlR.data);
+    setMe(meR.data); setIps(ipR.data); setWebhook(whR.data); setWhUrl(whR.data.url || '');
+    setWhEvents(whR.data.subscribedEvents || []); setDeliveries(dlR.data);
     loadLogs();
   };
   useEffect(() => { load(); }, []);
 
   const copy = (v) => { navigator.clipboard.writeText(v); message.success('Скопировано'); };
 
-  const saveWebhook = async (enabled) => {
+  const saveWebhook = async (enabled, events) => {
     setBusy(true);
     try {
-      const { data } = await api.put('/webhook', { url: whUrl, enabled: enabled ?? webhook.enabled });
-      setWebhook(data); message.success('Вебхук сохранён');
+      const { data } = await api.put('/webhook', { url: whUrl, enabled: enabled ?? webhook.enabled, events: events ?? whEvents });
+      setWebhook(data); setWhEvents(data.subscribedEvents || []); message.success('Вебхук сохранён');
     } catch (e) { message.error(e.response?.data?.error || 'Ошибка'); } finally { setBusy(false); }
   };
 
-  const testWebhook = async () => {
+  const testWebhook = async (event) => {
     setBusy(true);
     try {
-      const { data } = await api.post('/webhook/test');
-      message.success(`Тест доставлен (HTTP ${data.httpStatus})`);
+      const { data } = await api.post('/webhook/test', event ? { event } : {});
+      message.success(`Тест${event ? ` «${event}»` : ''} доставлен (HTTP ${data.httpStatus})`);
       const dl = await api.get('/webhook/deliveries'); setDeliveries(dl.data);
     } catch (e) { message.error(e.response?.data?.error || 'Не доставлено — проверьте URL'); } finally { setBusy(false); }
   };
@@ -141,13 +143,44 @@ export default function ApiAccess() {
       <Card style={{ marginTop: 16 }} title={<Space><ThunderboltOutlined />Вебхуки</Space>}
         extra={<Switch checked={!!webhook?.enabled} onChange={(v) => saveWebhook(v)} checkedChildren="Вкл" unCheckedChildren="Выкл" />}>
         <Alert type="info" showMessage style={{ marginBottom: 12 }}
-          message="Уведомления о событиях на ваш сервер (депозит, оплата, выпуск eSIM)."
-          description={<>События: <Text code>deposit.credited</Text>, <Text code>payment.completed</Text>, <Text code>payment.failed</Text>, <Text code>esim.issued</Text>. Подпись — заголовок <Text code>X-LnP-Signature</Text> (HMAC-SHA256 от тела секретом ниже).</>} />
+          message="Уведомления о событиях на ваш сервер (депозит, оплата, выпуск eSIM/VPN)."
+          description={<>Подпись — заголовок <Text code>X-LnP-Signature</Text> (HMAC-SHA256 от тела секретом ниже). Выберите нужные события ниже или отправьте тест по конкретному событию.</>} />
         <Space.Compact style={{ display: 'flex', marginBottom: 12 }}>
           <Input placeholder="https://your-app.com/webhooks/loveandpay" value={whUrl} onChange={(e) => setWhUrl(e.target.value)} />
           <Button type="primary" onClick={() => saveWebhook()} loading={busy}>Сохранить</Button>
-          <Button icon={<SendOutlined />} onClick={testWebhook} loading={busy} disabled={!webhook?.url}>Тест</Button>
+          <Dropdown
+            disabled={!webhook?.url}
+            menu={{
+              items: [
+                { key: '__all', label: 'Общий тест (webhook.test)' },
+                { type: 'divider' },
+                ...(webhook?.catalog || []).map((c) => ({ key: c.event, label: <span>{c.label} <Text code style={{ fontSize: 11 }}>{c.event}</Text></span> })),
+              ],
+              onClick: ({ key }) => testWebhook(key === '__all' ? undefined : key),
+            }}
+          >
+            <Button icon={<SendOutlined />} loading={busy} disabled={!webhook?.url}>Тест ▾</Button>
+          </Dropdown>
         </Space.Compact>
+
+        <div style={{ marginBottom: 12, padding: 12, background: '#fafafa', borderRadius: 8 }}>
+          <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+            <Text strong style={{ fontSize: 13 }}>Конструктор событий</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {whEvents.length === 0 ? 'подписаны на ВСЕ события' : `выбрано: ${whEvents.length}`}
+            </Text>
+          </Space>
+          <div style={{ marginTop: 10 }}>
+            <Checkbox.Group value={whEvents} onChange={setWhEvents}
+              options={(webhook?.catalog || []).map((c) => ({ label: <span>{c.label} <Text code style={{ fontSize: 11 }}>{c.event}</Text></span>, value: c.event }))}
+              style={{ display: 'flex', flexDirection: 'column', gap: 8 }} />
+          </div>
+          <Space style={{ marginTop: 12 }}>
+            <Button type="primary" size="small" onClick={() => saveWebhook(undefined, whEvents)} loading={busy}>Сохранить подписку</Button>
+            <Button size="small" onClick={() => { setWhEvents([]); saveWebhook(undefined, []); }} disabled={busy}>Все события</Button>
+          </Space>
+          <div style={{ marginTop: 8 }}><Text type="secondary" style={{ fontSize: 11 }}>Пустой список = получать все события (по умолчанию).</Text></div>
+        </div>
         <Descriptions column={1} size="small" bordered style={{ marginBottom: 12 }}>
           <Descriptions.Item label="Секрет подписи">
             <Space wrap>

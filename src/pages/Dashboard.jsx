@@ -2,10 +2,62 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Statistic, Typography, Spin, Tag, Space, Button, Divider, Alert } from 'antd';
 import { WalletOutlined, ThunderboltOutlined, GlobalOutlined, ArrowRightOutlined, MobileOutlined, SafetyOutlined } from '@ant-design/icons';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Segmented } from 'antd';
 import { api, usdt } from '../api.js';
 
 const { Title, Text, Paragraph } = Typography;
+
+// История курсов — snapshots collected every 30 min by the backend.
+function RateHistory({ services }) {
+  const options = [];
+  if (services?.sbp) options.push({ label: 'СБП · ₽', value: 'SBP' });
+  if (services?.promptpay) options.push({ label: 'PromptPay · ฿', value: 'PROMPTPAY' });
+  const [system, setSystem] = useState(options[0]?.value);
+  const [days, setDays] = useState(14);
+  const [points, setPoints] = useState(null);
+
+  useEffect(() => {
+    if (!system) return;
+    setPoints(null);
+    api.get('/rate-history', { params: { system, days } })
+      .then((r) => setPoints(r.data.points || [])).catch(() => setPoints([]));
+  }, [system, days]);
+
+  if (!options.length) return null;
+  const color = system === 'SBP' ? '#2f54eb' : '#389e0d';
+  const data = (points || []).map((p) => ({ t: new Date(p.at).getTime(), rate: p.rate }));
+
+  return (
+    <>
+      <Divider orientation="left">История курсов</Divider>
+      <Card>
+        <Space style={{ marginBottom: 12, flexWrap: 'wrap' }}>
+          {options.length > 1 && <Segmented options={options} value={system} onChange={setSystem} />}
+          <Segmented size="small" value={days} onChange={setDays}
+            options={[{ label: '7 дн', value: 7 }, { label: '14 дн', value: 14 }, { label: '30 дн', value: 30 }]} />
+        </Space>
+        {points === null
+          ? <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>
+          : data.length < 2
+            ? <Text type="secondary">Данные о курсе накапливаются — график появится в течение суток.</Text>
+            : (
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={data} margin={{ left: -8, right: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tick={{ fontSize: 11 }}
+                    tickFormatter={(t) => new Date(t).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} />
+                  <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} width={48} />
+                  <Tooltip labelFormatter={(t) => new Date(t).toLocaleString('ru-RU')}
+                    formatter={(v) => [`${Number(v).toFixed(2)} ${system === 'SBP' ? '₽' : '฿'}`, '1 USDT']} />
+                  <Line type="monotone" dataKey="rate" stroke={color} strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+      </Card>
+    </>
+  );
+}
 
 export default function Dashboard() {
   const [me, setMe] = useState(null);
@@ -95,6 +147,7 @@ export default function Dashboard() {
               </Col>
             )}
           </Row>
+          <RateHistory services={me.services} />
         </>
       )}
 

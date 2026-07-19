@@ -8,6 +8,7 @@ import {
 import ruRU from 'antd/locale/ru_RU';
 import { auth, api } from './api.js';
 import { Brand, LNP_PRIMARY } from './components/Brand.jsx';
+import NotificationBell from './components/NotificationBell.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Deposit from './pages/Deposit.jsx';
@@ -45,9 +46,10 @@ function Shell() {
   const screens = useBreakpoint();
   const [collapsed, setCollapsed] = useState(false);
   const [services, setServices] = useState(null);
+  const [avatar, setAvatar] = useState(null);
   const me = auth.me();
 
-  useEffect(() => { api.get('/me').then((r) => setServices(r.data.services)).catch(() => {}); }, []);
+  useEffect(() => { api.get('/me').then((r) => { setServices(r.data.services); setAvatar(r.data.avatarUrl || null); }).catch(() => {}); }, []);
   const MENU = buildMenu(services);
   const current = MENU.find((m) => m.key === loc.pathname);
 
@@ -82,10 +84,12 @@ function Shell() {
           justifyContent: 'space-between', borderBottom: '1px solid #e8ecef', position: 'sticky', top: 0, zIndex: 10,
           boxShadow: '0 1px 8px rgba(15,76,92,0.05)' }}>
           <Text strong style={{ fontSize: 18 }}>{current?.label || ''}</Text>
+          <Space size={4}>
+          <NotificationBell />
           <Dropdown menu={userMenu} trigger={['click']}>
             <Button type="text" style={{ height: 48, padding: '0 10px' }}>
               <Space>
-                <Avatar size={34} style={{ background: LNP_PRIMARY }}>{(me?.name || '?').slice(0, 1).toUpperCase()}</Avatar>
+                <Avatar size={34} src={avatar || undefined} style={{ background: LNP_PRIMARY }}>{(me?.name || '?').slice(0, 1).toUpperCase()}</Avatar>
                 {screens.sm && (
                   <span style={{ textAlign: 'left', lineHeight: 1.2 }}>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{me?.name}</div>
@@ -96,6 +100,7 @@ function Shell() {
               </Space>
             </Button>
           </Dropdown>
+          </Space>
         </Header>
 
         <Content style={{ padding: 24, background: '#f4f6f8' }}>

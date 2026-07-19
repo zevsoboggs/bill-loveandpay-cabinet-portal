@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import {
-  Card, Typography, Input, Button, Tag, message, Space, Empty, Modal, Statistic, List, Image, Result, Table, Tooltip,
+  Card, Typography, Input, Button, Tag, message, Space, Empty, Modal, Statistic, List, Image, Result, Table, Tooltip, Progress,
 } from 'antd';
-import { SearchOutlined, MobileOutlined, ShoppingCartOutlined, GlobalOutlined, ReloadOutlined } from '@ant-design/icons';
+import { SearchOutlined, MobileOutlined, ShoppingCartOutlined, GlobalOutlined, ReloadOutlined, BarChartOutlined } from '@ant-design/icons';
 import { api, usdt } from '../api.js';
 import { LNP_PRIMARY } from '../components/Brand.jsx';
 
@@ -29,6 +29,35 @@ const regionLabel = (p) => {
   const m = (p.name || '').match(/^([A-Za-zА-Яа-я &]+?)\s*\d/);
   return (m ? m[1].trim() : p.planType) || 'Регион';
 };
+
+// Lazy data-usage panel: loads расход трафика on demand from /esim/usage/:iccid.
+function EsimUsage({ iccid }) {
+  const [state, setState] = useState('idle'); // idle | loading | done | error
+  const [u, setU] = useState(null);
+  const load = () => {
+    setState('loading');
+    api.get(`/esim/usage/${iccid}`)
+      .then((r) => { setU(r.data); setState('done'); })
+      .catch(() => setState('error'));
+  };
+  const fmt = (mb) => mb == null ? '—' : (mb >= 1024 ? `${(mb / 1024).toFixed(2)} ГБ` : `${mb} МБ`);
+
+  if (state === 'idle') return <Button size="small" type="link" icon={<BarChartOutlined />} onClick={load} style={{ padding: 0, marginTop: 6 }}>Расход трафика</Button>;
+  if (state === 'loading') return <div style={{ marginTop: 6 }}><Text type="secondary" style={{ fontSize: 11 }}>Загрузка…</Text></div>;
+  if (state === 'error') return <div style={{ marginTop: 6 }}><Text type="secondary" style={{ fontSize: 11 }}>Данные о расходе недоступны</Text> <Button size="small" type="link" onClick={load}>↻</Button></div>;
+  const pct = u.usedPct;
+  return (
+    <div style={{ marginTop: 8 }}>
+      {pct != null
+        ? <Progress percent={pct} size="small" status={pct >= 90 ? 'exception' : 'active'} />
+        : <Text type="secondary" style={{ fontSize: 11 }}>Объём неизвестен</Text>}
+      <div style={{ fontSize: 11, color: '#59636b' }}>
+        Использовано {fmt(u.usedMb)}{u.totalMb ? ` из ${fmt(u.totalMb)}` : ''}{u.remainingMb != null ? ` · осталось ${fmt(u.remainingMb)}` : ''}
+      </div>
+      {u.expiry && <div style={{ fontSize: 11, color: '#9aa5ad' }}>до {new Date(u.expiry).toLocaleDateString('ru-RU')}</div>}
+    </div>
+  );
+}
 
 export default function Esim() {
   const [me, setMe] = useState(null);
@@ -146,6 +175,7 @@ export default function Esim() {
                     </div>
                   </Space>
                   {e.qrcode && <Paragraph style={{ marginTop: 8, marginBottom: 0, fontSize: 10 }} copyable={{ text: e.qrcode }}><Text type="secondary">LPA: {e.qrcode}</Text></Paragraph>}
+                  <EsimUsage iccid={e.iccid} />
                 </Card>
               </List.Item>
             )} />
