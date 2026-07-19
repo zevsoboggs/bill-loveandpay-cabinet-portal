@@ -16,6 +16,7 @@ import ApiAccess from './pages/ApiAccess.jsx';
 import Cards from './pages/Cards.jsx';
 import Esim from './pages/Esim.jsx';
 import Vpn from './pages/Vpn.jsx';
+import Transit from './pages/Transit.jsx';
 import Profile from './pages/Profile.jsx';
 
 const { Header, Sider, Content } = Layout;
@@ -31,6 +32,7 @@ function buildMenu(services) {
   ];
   if (services?.esim) items.push({ key: '/esim', icon: <MobileOutlined />, label: 'eSIM' });
   if (services?.vpn) items.push({ key: '/vpn', icon: <SafetyOutlined />, label: 'VPN' });
+  if (services?.transit) items.push({ key: '/transit', icon: <WalletOutlined />, label: 'Транзит-кошельки' });
   items.push({ key: '/cards', icon: <CreditCardOutlined />, label: 'Карты' });
   items.push({ key: '/api', icon: <ApiOutlined />, label: 'API-доступ' });
   items.push({ key: '/profile', icon: <UserOutlined />, label: 'Профиль' });
@@ -126,6 +128,7 @@ export default function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/esim" element={<Esim />} />
             <Route path="/vpn" element={<Vpn />} />
+            <Route path="/transit" element={<Transit />} />
             <Route path="/cards" element={<Cards />} />
             <Route path="/api" element={<ApiAccess />} />
             <Route path="/profile" element={<Profile />} />
