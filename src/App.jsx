@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, Outle
 import { ConfigProvider, Layout, Menu, Typography, Button, Space, Grid, Dropdown, Avatar } from 'antd';
 import {
   DashboardOutlined, WalletOutlined, TransactionOutlined, ApiOutlined, LogoutOutlined,
-  UserOutlined, DownOutlined, SafetyCertificateOutlined, CreditCardOutlined, MobileOutlined,
+  UserOutlined, DownOutlined, SafetyCertificateOutlined, CreditCardOutlined, MobileOutlined, SafetyOutlined,
 } from '@ant-design/icons';
 import ruRU from 'antd/locale/ru_RU';
 import { auth, api } from './api.js';
@@ -15,6 +15,7 @@ import Transactions from './pages/Transactions.jsx';
 import ApiAccess from './pages/ApiAccess.jsx';
 import Cards from './pages/Cards.jsx';
 import Esim from './pages/Esim.jsx';
+import Vpn from './pages/Vpn.jsx';
 import Profile from './pages/Profile.jsx';
 
 const { Header, Sider, Content } = Layout;
@@ -29,6 +30,7 @@ function buildMenu(services) {
     { key: '/transactions', icon: <TransactionOutlined />, label: 'Транзакции' },
   ];
   if (services?.esim) items.push({ key: '/esim', icon: <MobileOutlined />, label: 'eSIM' });
+  if (services?.vpn) items.push({ key: '/vpn', icon: <SafetyOutlined />, label: 'VPN' });
   items.push({ key: '/cards', icon: <CreditCardOutlined />, label: 'Карты' });
   items.push({ key: '/api', icon: <ApiOutlined />, label: 'API-доступ' });
   items.push({ key: '/profile', icon: <UserOutlined />, label: 'Профиль' });
@@ -123,6 +125,7 @@ export default function App() {
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/esim" element={<Esim />} />
+            <Route path="/vpn" element={<Vpn />} />
             <Route path="/cards" element={<Cards />} />
             <Route path="/api" element={<ApiAccess />} />
             <Route path="/profile" element={<Profile />} />

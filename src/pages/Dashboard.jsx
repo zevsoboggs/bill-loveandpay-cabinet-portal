@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Statistic, Typography, Spin, Tag, Space, Button, Divider, Alert } from 'antd';
-import { WalletOutlined, ThunderboltOutlined, GlobalOutlined, ArrowRightOutlined, MobileOutlined } from '@ant-design/icons';
+import { WalletOutlined, ThunderboltOutlined, GlobalOutlined, ArrowRightOutlined, MobileOutlined, SafetyOutlined } from '@ant-design/icons';
 import { api } from '../api.js';
 
 const { Title, Text, Paragraph } = Typography;
@@ -48,6 +48,14 @@ export default function Dashboard() {
             <Card>
               <Statistic title="Баланс eSIM" value={b.esim} precision={2} suffix="USDT" valueStyle={{ color: '#722ed1' }} prefix={<MobileOutlined />} />
               <Text type="secondary" style={{ fontSize: 12 }}>Наценка: {(me.margins.esim * 100).toFixed(1)}%</Text>
+            </Card>
+          </Col>
+        )}
+        {me.services?.vpn && (
+          <Col xs={12} md={8}>
+            <Card>
+              <Statistic title="Баланс VPN" value={b.vpn} precision={2} suffix="USDT" valueStyle={{ color: '#d4380d' }} prefix={<SafetyOutlined />} />
+              <Text type="secondary" style={{ fontSize: 12 }}>Наценка: {(me.margins.vpn * 100).toFixed(1)}%</Text>
             </Card>
           </Col>
         )}
