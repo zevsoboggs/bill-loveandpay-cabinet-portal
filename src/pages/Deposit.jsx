@@ -5,6 +5,7 @@ import {
 } from 'antd';
 import { CopyOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
 import { api, usdt } from '../api.js';
+import { LNP_PRIMARY } from '../components/Brand.jsx';
 
 const { Title, Text, Paragraph } = Typography;
 const DEP_COLOR = { PENDING: 'default', CONFIRMED: 'processing', CREDITED: 'success', FAILED: 'error' };
@@ -65,8 +66,14 @@ export default function Deposit() {
           </Col>
           <Col xs={24} md={14}>
             <Card>
-              <Statistic title="Текущий депозит" value={me.balances.deposit} precision={2} suffix="USDT" />
-              <Alert style={{ marginTop: 16 }} type="info" showMessage
+              <Row gutter={16}>
+                <Col span={12}><Statistic title="Текущий депозит" value={me.balances.deposit} precision={2} suffix="USDT" /></Col>
+                <Col span={12}><Statistic title="Минимальный депозит" value={me.deposit.minDeposit} precision={0} suffix="USDT" valueStyle={{ color: LNP_PRIMARY }} /></Col>
+              </Row>
+              <Alert style={{ marginTop: 16 }} type="warning" showMessage
+                message={`Минимальная сумма пополнения — ${me.deposit.minDeposit} USDT`}
+                description="Депозиты меньше минимальной суммы не активируют услуги. Отправляйте не меньше указанного порога." />
+              <Alert style={{ marginTop: 12 }} type="info" showMessage
                 message="Только USDT TRC-20"
                 description="Отправляйте на этот адрес исключительно USDT в сети TRON (TRC-20). Средства зачисляются автоматически в течение ~1 минуты после подтверждения сети. Можно ускорить кнопкой «Проверить поступление»." />
               <Alert style={{ marginTop: 12 }} type="warning" showMessage
