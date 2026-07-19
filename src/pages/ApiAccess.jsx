@@ -25,12 +25,16 @@ export default function ApiAccess() {
   const [deliveries, setDeliveries] = useState([]);
   const [whUrl, setWhUrl] = useState('');
   const [whReveal, setWhReveal] = useState(false);
+  const [logs, setLogs] = useState([]);
+
+  const loadLogs = () => api.get('/api-logs', { params: { limit: 100 } }).then((r) => setLogs(r.data)).catch(() => {});
 
   const load = async () => {
     const [meR, ipR, whR, dlR] = await Promise.all([
       api.get('/me'), api.get('/ip-whitelist'), api.get('/webhook'), api.get('/webhook/deliveries'),
     ]);
     setMe(meR.data); setIps(ipR.data); setWebhook(whR.data); setWhUrl(whR.data.url || ''); setDeliveries(dlR.data);
+    loadLogs();
   };
   useEffect(() => { load(); }, []);
 
@@ -165,6 +169,20 @@ export default function ApiAccess() {
             { title: 'Время', dataIndex: 'createdAt', render: (v) => new Date(v).toLocaleString('ru-RU') },
           ]}
           locale={{ emptyText: 'Доставок пока нет' }} />
+      </Card>
+
+      <Card style={{ marginTop: 16 }} title={<Space><ApiOutlined />Журнал API-запросов</Space>}
+        extra={<Button size="small" icon={<ReloadOutlined />} onClick={loadLogs}>Обновить</Button>}>
+        <Table dataSource={logs} rowKey="id" size="small" pagination={{ pageSize: 10 }} scroll={{ x: 560 }}
+          columns={[
+            { title: 'Время', dataIndex: 'createdAt', render: (v) => new Date(v).toLocaleString('ru-RU') },
+            { title: 'Метод', dataIndex: 'method', render: (v) => <Tag>{v}</Tag> },
+            { title: 'Путь', dataIndex: 'path', render: (v) => <Text code style={{ fontSize: 11 }}>{v}</Text> },
+            { title: 'Статус', dataIndex: 'status', align: 'center', render: (v) => v == null ? '—' : <Tag color={v < 300 ? 'success' : v < 500 ? 'warning' : 'error'}>{v}</Tag> },
+            { title: 'Время отв.', dataIndex: 'durationMs', align: 'right', render: (v) => v == null ? '—' : `${v} ms` },
+            { title: 'Режим', dataIndex: 'sandbox', align: 'center', render: (v) => v ? <Tag color="blue">sandbox</Tag> : <Tag>live</Tag> },
+          ]}
+          locale={{ emptyText: 'Запросов пока нет' }} />
       </Card>
 
       <Card style={{ marginTop: 16 }} title="Документация и быстрый старт"
