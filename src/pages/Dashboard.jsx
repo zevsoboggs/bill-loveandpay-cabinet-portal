@@ -8,9 +8,13 @@ const { Title, Text, Paragraph } = Typography;
 
 export default function Dashboard() {
   const [me, setMe] = useState(null);
+  const [rates, setRates] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { api.get('/me').then((r) => setMe(r.data)).finally(() => setLoading(false)); }, []);
+  useEffect(() => {
+    api.get('/me').then((r) => setMe(r.data)).finally(() => setLoading(false));
+    api.get('/rates').then((r) => setRates(r.data)).catch(() => {});
+  }, []);
   if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><Spin size="large" /></div>;
   if (!me) return <Text type="danger">Не удалось загрузить данные</Text>;
 
@@ -60,6 +64,36 @@ export default function Dashboard() {
           </Col>
         )}
       </Row>
+
+      {(me.services?.sbp || me.services?.promptpay) && (
+        <>
+          <Divider orientation="left">Курсы</Divider>
+          <Row gutter={[16, 16]}>
+            {me.services?.sbp && (
+              <Col xs={12} md={8}>
+                <Card>
+                  <Space style={{ marginBottom: 4 }}><Tag color="geekblue">СБП</Tag><Text type="secondary" style={{ fontSize: 12 }}>USDT → RUB</Text></Space>
+                  <Statistic value={rates?.sbp?.rubPerUsdt ?? null} precision={2} prefix="1 USDT =" suffix="₽"
+                    valueStyle={{ color: '#2f54eb' }} loading={!rates} />
+                  {rates?.sbp?.error && <Text type="danger" style={{ fontSize: 12 }}>курс временно недоступен</Text>}
+                  {rates?.sbp?.updatedAt && <Text type="secondary" style={{ fontSize: 11 }}>обновлён {new Date(rates.sbp.updatedAt).toLocaleTimeString('ru-RU')}</Text>}
+                </Card>
+              </Col>
+            )}
+            {me.services?.promptpay && (
+              <Col xs={12} md={8}>
+                <Card>
+                  <Space style={{ marginBottom: 4 }}><Tag color="green">PromptPay</Tag><Text type="secondary" style={{ fontSize: 12 }}>USDT → THB</Text></Space>
+                  <Statistic value={rates?.promptpay?.thbPerUsdt ?? null} precision={2} prefix="1 USDT =" suffix="฿"
+                    valueStyle={{ color: '#389e0d' }} loading={!rates} />
+                  {rates?.promptpay?.error && <Text type="danger" style={{ fontSize: 12 }}>курс временно недоступен</Text>}
+                  {rates?.promptpay?.updatedAt && <Text type="secondary" style={{ fontSize: 11 }}>обновлён {new Date(rates.promptpay.updatedAt).toLocaleTimeString('ru-RU')}</Text>}
+                </Card>
+              </Col>
+            )}
+          </Row>
+        </>
+      )}
 
       <Divider orientation="left">Как работает биллинг</Divider>
       <Alert type="info" showMessage style={{ marginBottom: 16 }}
