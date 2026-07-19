@@ -102,6 +102,23 @@ export default function ApiAccess() {
         <Alert style={{ marginTop: 12 }} type="warning" showMessage message="Секрет — как пароль. Не публикуйте его и передавайте только по защищённым каналам." />
       </Card>
 
+      <Card style={{ marginTop: 16 }} title={<Space><ApiOutlined />Sandbox (тестовый режим)</Space>}>
+        <Alert style={{ marginBottom: 12 }} type="info" showMessage
+          message="Тестируйте интеграцию без реальных списаний"
+          description={<>С этими ключами платежи/выпуск <b>симулируются</b> (ответ помечен <Text code>sandbox: true</Text>), баланс не тратится, IP-ограничение не действует. Тот же базовый URL и эндпоинты.</>} />
+        <Descriptions column={1} size="small" bordered>
+          <Descriptions.Item label="X-API-Key (sandbox)">
+            <Space><Text code>{reveal ? me.api.sandboxApiKey : mask(me.api.sandboxApiKey || '')}</Text><Button size="small" icon={<CopyOutlined />} onClick={() => copy(me.api.sandboxApiKey)} /></Space>
+          </Descriptions.Item>
+          <Descriptions.Item label="X-API-Secret (sandbox)">
+            <Space><Text code>{reveal ? me.api.sandboxApiSecret : mask(me.api.sandboxApiSecret || '')}</Text><Button size="small" icon={<CopyOutlined />} onClick={() => copy(me.api.sandboxApiSecret)} /></Space>
+          </Descriptions.Item>
+        </Descriptions>
+        <Alert style={{ marginTop: 12 }} type="success" showMessage
+          message="Идемпотентность"
+          description={<>Для платёжных запросов передавайте заголовок <Text code>Idempotency-Key</Text> — повтор с тем же ключом вернёт тот же результат (защита от двойного списания при ретраях).</>} />
+      </Card>
+
       <Card style={{ marginTop: 16 }} title={<Space><ApiOutlined />Белый список IP {me.api.ipRestricted ? <Tag color="success">включён</Tag> : <Tag>выключен</Tag>}</Space>}
         extra={<Button icon={<PlusOutlined />} onClick={() => setIpOpen(true)}>Добавить IP</Button>}>
         {me.api.ipRestricted

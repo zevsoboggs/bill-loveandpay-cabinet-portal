@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Tag, Typography, Segmented, Space } from 'antd';
+import { Card, Table, Tag, Typography, Segmented, Space, Button, message } from 'antd';
+import { DownloadOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { api, usdt } from '../api.js';
+
+const download = async (path, filename) => {
+  try {
+    const { data } = await api.get(path, { responseType: 'blob' });
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  } catch { message.error('Ошибка скачивания'); }
+};
 
 const { Title, Text } = Typography;
 const SYS_LABEL = { SBP: 'СБП (USDT)', PROMPTPAY: 'PromptPay (Тай QR)', ESIM: 'eSIM', VPN: 'VPN' };
@@ -22,8 +32,12 @@ export default function Transactions() {
     <div>
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }} wrap>
         <Title level={3} style={{ margin: 0 }}>Транзакции</Title>
-        <Segmented value={system} onChange={setSystem} options={[
-          { value: 'ALL', label: 'Все' }, { value: 'SBP', label: SYS_LABEL.SBP }, { value: 'PROMPTPAY', label: SYS_LABEL.PROMPTPAY }, { value: 'ESIM', label: SYS_LABEL.ESIM }, { value: 'VPN', label: SYS_LABEL.VPN }]} />
+        <Space wrap>
+          <Segmented value={system} onChange={setSystem} options={[
+            { value: 'ALL', label: 'Все' }, { value: 'SBP', label: SYS_LABEL.SBP }, { value: 'PROMPTPAY', label: SYS_LABEL.PROMPTPAY }, { value: 'ESIM', label: SYS_LABEL.ESIM }, { value: 'VPN', label: SYS_LABEL.VPN }]} />
+          <Button icon={<DownloadOutlined />} onClick={() => download('/transactions/export', 'transactions.csv')}>CSV</Button>
+          <Button icon={<FilePdfOutlined />} onClick={() => download('/statement', 'statement.pdf')}>Выписка PDF</Button>
+        </Space>
       </Space>
       <Card>
         <Table dataSource={rows} rowKey="id" loading={loading} size="small" pagination={{ pageSize: 15 }} scroll={{ x: 800 }}

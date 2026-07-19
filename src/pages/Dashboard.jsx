@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Statistic, Typography, Spin, Tag, Space, Button, Divider, Alert } from 'antd';
 import { WalletOutlined, ThunderboltOutlined, GlobalOutlined, ArrowRightOutlined, MobileOutlined, SafetyOutlined } from '@ant-design/icons';
-import { api } from '../api.js';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { api, usdt } from '../api.js';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -11,9 +12,11 @@ export default function Dashboard() {
   const [rates, setRates] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [spend, setSpend] = useState(null);
   useEffect(() => {
     api.get('/me').then((r) => setMe(r.data)).finally(() => setLoading(false));
     api.get('/rates').then((r) => setRates(r.data)).catch(() => {});
+    api.get('/analytics').then((r) => setSpend(r.data)).catch(() => {});
   }, []);
   if (loading) return <div style={{ textAlign: 'center', padding: 80 }}><Spin size="large" /></div>;
   if (!me) return <Text type="danger">Не удалось загрузить данные</Text>;
@@ -92,6 +95,24 @@ export default function Dashboard() {
               </Col>
             )}
           </Row>
+        </>
+      )}
+
+      {spend?.series?.length > 0 && (
+        <>
+          <Divider orientation="left">Расходы за 30 дней · всего {usdt(spend.totals.spent)}</Divider>
+          <Card>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={spend.series} margin={{ left: -12, right: 8 }}>
+                <defs><linearGradient id="sp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0F4C5C" stopOpacity={0.5} /><stop offset="100%" stopColor="#0F4C5C" stopOpacity={0.05} /></linearGradient></defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                <XAxis dataKey="day" tick={{ fontSize: 11 }} tickFormatter={(d) => d.slice(5)} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v) => usdt(v)} />
+                <Area type="monotone" dataKey="spent" name="Потрачено" stroke="#0F4C5C" fill="url(#sp)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Card>
         </>
       )}
 
