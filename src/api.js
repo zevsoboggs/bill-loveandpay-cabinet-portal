@@ -24,8 +24,8 @@ api.interceptors.response.use(
 );
 
 export const auth = {
-  async login(email, password) {
-    const { data } = await api.post('/auth/login', { email, password });
+  async login(email, password, totp) {
+    const { data } = await api.post('/auth/login', { email, password, totp });
     localStorage.setItem(TOKEN_KEY, data.token);
     localStorage.setItem('billing_client', JSON.stringify(data.client));
     return data;

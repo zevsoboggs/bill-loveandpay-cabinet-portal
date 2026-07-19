@@ -1,12 +1,84 @@
 import { useEffect, useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 import {
-  Row, Col, Card, Typography, Descriptions, Tag, Form, Input, Button, message, Space, Avatar, Upload, Switch,
+  Row, Col, Card, Typography, Descriptions, Tag, Form, Input, Button, message, Space, Avatar, Upload, Switch, Alert, Steps, Popconfirm,
 } from 'antd';
-import { UserOutlined, LockOutlined, SafetyOutlined, CameraOutlined, SyncOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, SafetyOutlined, CameraOutlined, SyncOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { api, auth } from '../api.js';
 import { LNP_PRIMARY } from '../components/Brand.jsx';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
+
+// Google Authenticator (TOTP) setup + management for the cabinet.
+function TwoFactorCard({ enabled, onChange }) {
+  const [setup, setSetup] = useState(null); // { secret, otpauth }
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const start = async () => {
+    setBusy(true);
+    try { const { data } = await api.post('/auth/2fa/setup'); setSetup(data); }
+    catch (e) { message.error(e.response?.data?.error || 'Ошибка'); } finally { setBusy(false); }
+  };
+  const enable = async () => {
+    setBusy(true);
+    try { await api.post('/auth/2fa/enable', { totp: code }); message.success('2FA включена'); setSetup(null); setCode(''); onChange(true); }
+    catch (e) { message.error(e.response?.data?.error || 'Неверный код'); } finally { setBusy(false); }
+  };
+  const disable = async (v) => {
+    setBusy(true);
+    try { await api.post('/auth/2fa/disable', v); message.success('2FA отключена'); onChange(false); }
+    catch (e) { message.error(e.response?.data?.error || 'Ошибка'); } finally { setBusy(false); }
+  };
+
+  return (
+    <Card style={{ marginTop: 16 }} title={<Space><SafetyOutlined />Двухфакторная аутентификация (2FA)</Space>}
+      extra={enabled ? <Tag color="success" icon={<CheckCircleOutlined />}>Включена</Tag> : <Tag>Выключена</Tag>}>
+      {enabled ? (
+        <>
+          <Alert type="success" showIcon style={{ marginBottom: 12 }} message="Вход в кабинет защищён кодом из Google Authenticator." />
+          <Form layout="vertical" onFinish={disable} requiredMark={false}>
+            <Text type="secondary">Чтобы отключить 2FA, подтвердите пароль и текущий код:</Text>
+            <Row gutter={8} style={{ marginTop: 8 }}>
+              <Col xs={24} sm={12}><Form.Item name="password" rules={[{ required: true, message: 'Пароль' }]}><Input.Password placeholder="Пароль" /></Form.Item></Col>
+              <Col xs={24} sm={8}><Form.Item name="totp" rules={[{ required: true, message: 'Код' }]}><Input placeholder="Код 2FA" maxLength={6} inputMode="numeric" /></Form.Item></Col>
+              <Col xs={24} sm={4}><Button danger htmlType="submit" loading={busy} block>Отключить</Button></Col>
+            </Row>
+          </Form>
+        </>
+      ) : !setup ? (
+        <>
+          <Paragraph type="secondary" style={{ marginBottom: 12 }}>
+            Защитите вход одноразовыми кодами. Понадобится приложение Google Authenticator, Authy или 1Password.
+          </Paragraph>
+          <Button type="primary" icon={<SafetyOutlined />} onClick={start} loading={busy}>Включить 2FA</Button>
+        </>
+      ) : (
+        <Steps direction="vertical" size="small" current={1}
+          items={[
+            { title: 'Отсканируйте QR-код', description: (
+              <div style={{ padding: '8px 0' }}>
+                <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #eee', display: 'inline-block' }}>
+                  <QRCodeCanvas value={setup.otpauth} size={168} />
+                </div>
+                <Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Или введите ключ вручную:</Text><br />
+                  <Text code copyable>{setup.secret}</Text>
+                </Paragraph>
+              </div>
+            ) },
+            { title: 'Введите код из приложения', description: (
+              <Space style={{ marginTop: 8 }}>
+                <Input placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} maxLength={6} inputMode="numeric" style={{ width: 140 }} />
+                <Button type="primary" onClick={enable} loading={busy} disabled={code.length < 6}>Подтвердить</Button>
+                <Button onClick={() => { setSetup(null); setCode(''); }}>Отмена</Button>
+              </Space>
+            ) },
+          ]} />
+      )}
+    </Card>
+  );
+}
 
 // Resize an uploaded image to a compact square JPEG data URL (client-side, no upload server).
 function fileToAvatar(file, size = 160) {
@@ -35,10 +107,11 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [avatar, setAvatar] = useState(null);
   const [autoRenew, setAutoRenew] = useState(false);
+  const [twoFa, setTwoFa] = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => {
-    api.get('/me').then((r) => { setMe(r.data); setAvatar(r.data.avatarUrl || null); setAutoRenew(!!r.data.vpnAutoRenew); });
+    api.get('/me').then((r) => { setMe(r.data); setAvatar(r.data.avatarUrl || null); setAutoRenew(!!r.data.vpnAutoRenew); setTwoFa(!!r.data.totpEnabled); });
   }, []);
 
   const changePassword = async (v) => {
@@ -141,6 +214,7 @@ export default function Profile() {
               </Text>
             </Form>
           </Card>
+          <TwoFactorCard enabled={twoFa} onChange={setTwoFa} />
         </Col>
       </Row>
     </div>
