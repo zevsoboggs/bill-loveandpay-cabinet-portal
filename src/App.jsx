@@ -5,6 +5,7 @@ import {
   DashboardOutlined, WalletOutlined, TransactionOutlined, ApiOutlined, LogoutOutlined,
   UserOutlined, DownOutlined, SafetyCertificateOutlined, CreditCardOutlined, MobileOutlined, SafetyOutlined,
 } from '@ant-design/icons';
+import Aml from './pages/Aml.jsx';
 import ruRU from 'antd/locale/ru_RU';
 import { auth, api } from './api.js';
 import { Brand, LNP_PRIMARY } from './components/Brand.jsx';
@@ -33,6 +34,7 @@ function buildMenu(services) {
   ];
   if (services?.esim) items.push({ key: '/esim', icon: <MobileOutlined />, label: 'eSIM' });
   if (services?.vpn) items.push({ key: '/vpn', icon: <SafetyOutlined />, label: 'VPN' });
+  if (services?.aml) items.push({ key: '/aml', icon: <SafetyCertificateOutlined />, label: 'AML-проверка' });
   if (services?.transit) items.push({ key: '/transit', icon: <WalletOutlined />, label: 'Транзит-кошельки' });
   items.push({ key: '/cards', icon: <CreditCardOutlined />, label: 'Карты' });
   items.push({ key: '/api', icon: <ApiOutlined />, label: 'API-доступ' });
@@ -133,6 +135,7 @@ export default function App() {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/esim" element={<Esim />} />
             <Route path="/vpn" element={<Vpn />} />
+            <Route path="/aml" element={<Aml />} />
             <Route path="/transit" element={<Transit />} />
             <Route path="/cards" element={<Cards />} />
             <Route path="/api" element={<ApiAccess />} />

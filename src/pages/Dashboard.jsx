@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Statistic, Typography, Spin, Tag, Space, Button, Divider, Alert } from 'antd';
-import { WalletOutlined, ThunderboltOutlined, GlobalOutlined, ArrowRightOutlined, MobileOutlined, SafetyOutlined } from '@ant-design/icons';
+import { WalletOutlined, ThunderboltOutlined, GlobalOutlined, ArrowRightOutlined, MobileOutlined, SafetyOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Segmented } from 'antd';
 import { api, usdt } from '../api.js';
@@ -115,6 +115,14 @@ export default function Dashboard() {
             <Card>
               <Statistic title="Баланс VPN" value={b.vpn} precision={2} suffix="USDT" valueStyle={{ color: '#d4380d' }} prefix={<SafetyOutlined />} />
               <Text type="secondary" style={{ fontSize: 12 }}>Наценка: {(me.margins.vpn * 100).toFixed(1)}%</Text>
+            </Card>
+          </Col>
+        )}
+        {me.services?.aml && (
+          <Col xs={12} md={8}>
+            <Card>
+              <Statistic title="Баланс AML" value={b.aml} precision={2} suffix="USDT" valueStyle={{ color: '#08979c' }} prefix={<SafetyCertificateOutlined />} />
+              <Text type="secondary" style={{ fontSize: 12 }}>0.5 USDT за проверку</Text>
             </Card>
           </Col>
         )}
