@@ -10,6 +10,10 @@ import { LNP_PRIMARY } from '../components/Brand.jsx';
 
 const { Title, Text, Paragraph } = Typography;
 
+// Техработы на стороне ядра AML — временно отключает запуск новых проверок.
+// Поставить false, когда ядро вернётся в строй.
+const AML_MAINTENANCE = true;
+
 const RISK = {
   low: { color: 'success', label: 'Низкий риск', icon: <CheckCircleOutlined />, bar: '#52c41a' },
   medium: { color: 'warning', label: 'Средний риск', icon: <WarningOutlined />, bar: '#faad14' },
@@ -40,6 +44,7 @@ export default function Aml() {
   useEffect(() => { loadPrice(); loadHistory(); }, []);
 
   const runCheck = async () => {
+    if (AML_MAINTENANCE) return message.warning('AML временно недоступен — ведутся технические работы');
     const addr = address.trim();
     if (!addr) return message.warning('Введите адрес');
     setChecking(true); setResult(null);
@@ -65,6 +70,12 @@ export default function Aml() {
         Каждая проверка формирует PDF-отчёт. Стоимость — <b>{price ? usdt(price.pricePerCheck) : '…'}</b> за проверку.
       </Paragraph>
 
+      {AML_MAINTENANCE && (
+        <Alert style={{ marginBottom: 16 }} type="warning" showIcon
+          message="Технические работы"
+          description="Ведутся технические работы на стороне ядра AML. Запуск новых проверок временно недоступен — средства не списываются. История и ранее сформированные PDF-отчёты остаются доступны. Приносим извинения за неудобства." />
+      )}
+
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={12} md={8}>
           <Card><Statistic title="AML-баланс" value={price?.balance ?? 0} precision={2} suffix="USDT" prefix={<SafetyCertificateOutlined />} /></Card>
@@ -76,11 +87,15 @@ export default function Aml() {
 
       <Card title="Новая проверка">
         <Space.Compact style={{ display: 'flex' }}>
-          <Input size="large" placeholder="Адрес TRON / Ethereum / Bitcoin" value={address}
+          <Input size="large" placeholder="Адрес TRON / Ethereum / Bitcoin" value={address} disabled={AML_MAINTENANCE}
             onChange={(e) => setAddress(e.target.value)} onPressEnter={runCheck} prefix={<SearchOutlined />} allowClear />
-          <Button size="large" type="primary" loading={checking} onClick={runCheck}>Проверить</Button>
+          <Button size="large" type="primary" loading={checking} onClick={runCheck} disabled={AML_MAINTENANCE}>Проверить</Button>
         </Space.Compact>
-        <Text type="secondary" style={{ fontSize: 12 }}>Сеть определяется автоматически. С баланса спишется {price ? usdt(price.pricePerCheck) : '0.5 USDT'}.</Text>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {AML_MAINTENANCE
+            ? 'Проверки временно приостановлены на время техработ.'
+            : `Сеть определяется автоматически. С баланса спишется ${price ? usdt(price.pricePerCheck) : '0.5 USDT'}.`}
+        </Text>
       </Card>
 
       {res && (
