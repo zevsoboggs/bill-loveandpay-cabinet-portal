@@ -1,0 +1,24 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: #eef3f4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+/* Slim, unobtrusive scrollbars (sidebar menu, tables, modals). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd6da transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: #cbd6da; border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #b3c2c8; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Menu items get a touch more breathing room in the floating sidebar. */
+.ant-menu-inline .ant-menu-item { padding-inline: 16px !important; }
+.ant-menu-inline-collapsed .ant-menu-item { padding-inline: calc(50% - 16px) !important; }
