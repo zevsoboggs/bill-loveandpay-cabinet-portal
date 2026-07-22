@@ -19,7 +19,22 @@ body {
 *::-webkit-scrollbar-thumb:hover { background: #b3c2c8; }
 *::-webkit-scrollbar-track { background: transparent; }
 
-/* Expanded menu items get a touch more breathing room. Collapsed items are left
-   to AntD's native centering (do NOT override their padding — it de-centers the
-   icons). */
+/* Expanded menu items get a touch more breathing room. */
 .ant-menu-inline:not(.ant-menu-inline-collapsed) .ant-menu-item { padding-inline: 16px !important; }
+
+/* Collapsed rail: AntD forces a fixed menu width + its own item padding, which
+   pushes the icons off the rail's centre. Force full width and flex-centre every
+   icon so they line up perfectly under the logo. */
+.ant-menu-inline-collapsed { width: 100% !important; }
+.ant-menu-inline-collapsed > .ant-menu-item,
+.ant-menu-inline-collapsed > .ant-menu-submenu > .ant-menu-submenu-title {
+  padding-inline: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+.ant-menu-inline-collapsed .ant-menu-item .ant-menu-item-icon,
+.ant-menu-inline-collapsed .anticon {
+  margin: 0 !important;
+  line-height: 0;
+}
