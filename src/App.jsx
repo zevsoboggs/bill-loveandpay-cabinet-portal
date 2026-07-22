@@ -85,8 +85,8 @@ function Shell() {
   // Reusable sidebar body (used both docked and in the mobile drawer).
   const SidebarBody = ({ mini = false, inDrawer = false }) => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: mini ? '22px 8px' : '22px 22px 18px' }}>
-        <Brand collapsed={mini} height={30} sub="Кабинет клиента" />
+      <div style={{ padding: mini ? '20px 0' : '22px 22px 18px' }}>
+        <Brand collapsed={mini} height={mini ? 26 : 30} sub="Кабинет клиента" />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '0 10px 8px' }}>
         <Menu mode="inline" inlineCollapsed={mini} selectedKeys={[loc.pathname]} items={MENU}
